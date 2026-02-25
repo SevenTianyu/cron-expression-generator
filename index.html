@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cron 表达式生成器 - 可视化定时任务工具</title>
+    <meta name="description" content="免费的 Cron 表达式生成器，支持可视化编辑、实时预览、常用模板，轻松生成 Linux/Unix/Quartz 定时任务表达式">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #06b6d4;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        
+        .tagline {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 40px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+        
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cron-output {
+            background: var(--bg);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .cron-expression {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-align: center;
+            word-break: break-all;
+        }
+        
+        .cron-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+        
+        .time-fields {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .time-field {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .time-field-label {
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .time-field-input {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .time-field-value {
+            font-family: monospace;
+            color: var(--primary);
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 8px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.9rem;
+            width: 80px;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .quick-select {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        
+        .quick-btn {
+            padding: 6px 12px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .templates {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .template-card {
+            padding: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .template-card:hover {
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .template-card.active {
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.15);
+        }
+        
+        .template-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .template-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .template-cron {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-top: 8px;
+        }
+        
+        .preview-section {
+            margin-top: 24px;
+        }
+        
+        .next-runs {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .next-runs-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .run-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .run-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: var(--surface);
+            border-radius: 6px;
+        }
+        
+        .run-time {
+            font-family: monospace;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .run-desc {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        .description-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        
+        .description-text {
+            color: var(--text);
+            font-size: 1rem;
+        }
+        
+        .description-text span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.95rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: var(--text);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: var(--success);
+            color: white;
+            border-radius: 8px;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        
+        .cron-format-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 10px;
+        }
+        
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .format-option input[type="radio"] {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">⏰ Cron 表达式生成器</div>
+        <p class="tagline">可视化编辑定时任务，支持 Linux/Unix/Quartz 格式，实时预览下次执行时间，让 Cron 表达式变得简单易懂。</p>
+    </header>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-title">🎯 常用模板</div>
+                <div class="templates">
+                    <div class="template-card" data-cron="* * * * *">
+                        <div class="template-name">每分钟</div>
+                        <div class="template-desc">每分钟执行一次</div>
+                        <div class="template-cron">* * * * *</div>
+                    </div>
+                    <div class="template-card" data-cron="0 * * * *">
+                        <div class="template-name">每小时</div>
+                        <div class="template-desc">每小时的第0分钟</div>
+                        <div class="template-cron">0 * * * *</div>
+                    </div>
+                    <div class="template-card" data-cron="0 0 * * *">
+                        <div class="template-name">每天</div>
+                        <div class="template-desc">每天午夜执行</div>
+                        <div class="template-cron">0 0 * * *</div>
+                    </div>
+                    <div class="template-card" data-cron="0 0 * * 0">
+                        <div class="template-name">每周</div>
+                        <div class="template-desc">每周日午夜</div>
+                        <div class="template-cron">0 0 * * 0</div>
+                    </div>
+                    <div class="template-card" data-cron="0 0 1 * *">
+                        <div class="template-name">每月</div>
+                        <div class="template-desc">每月1号午夜</div>
+                        <div class="template-cron">0 0 1 * *</div>
+                    </div>
+                    <div class="template-card" data-cron="*/5 * * * *">
+                        <div class="template-name">每5分钟</div>
+                        <div class="template-desc">每5分钟执行</div>
+                        <div class="template-cron">*/5 * * * *</div>
+                    </div>
+                    <div class="template-card" data-cron="0 9 * * 1-5">
+                        <div class="template-name">工作日早上</div>
+                        <div class="template-desc">周一到周五9点</div>
+                        <div class="template-cron">0 9 * * 1-5</div>
+                    </div>
+                    <div class="template-card" data-cron="0 0,12 * * *">
+                        <div class="template-name">每天两次</div>
+                        <div class="template-desc">午夜和中午</div>
+                        <div class="template-cron">0 0,12 * * *</div>
+                    </div>
+                </div>
+                
+                <div class="panel-title">⚙️ 自定义设置</div>
+                <div class="time-fields">
+                    <div class="time-field">
+                        <div class="time-field-label">分钟</div>
+                        <div class="time-field-input">
+                            <input type="text" id="minute" value="*" placeholder="0-59">
+                        </div>
+                        <div class="time-field-value" id="minute-val">*</div>
+                    </div>
+                    <div class="time-field">
+                        <div class="time-field-label">小时</div>
+                        <div class="time-field-input">
+                            <input type="text" id="hour" value="*" placeholder="0-23">
+                        </div>
+                        <div class="time-field-value" id="hour-val">*</div>
+                    </div>
+                    <div class="time-field">
+                        <div class="time-field-label">日期</div>
+                        <div class="time-field-input">
+                            <input type="text" id="day" value="*" placeholder="1-31">
+                        </div>
+                        <div class="time-field-value" id="day-val">*</div>
+                    </div>
+                    <div class="time-field">
+                        <div class="time-field-label">月份</div>
+                        <div class="time-field-input">
+                            <input type="text" id="month" value="*" placeholder="1-12">
+                        </div>
+                        <div class="time-field-value" id="month-val">*</div>
+                    </div>
+                    <div class="time-field">
+                        <div class="time-field-label">星期</div>
+                        <div class="time-field-input">
+                            <input type="text" id="weekday" value="*" placeholder="0-7">
+                        </div>
+                        <div class="time-field-value" id="weekday-val">*</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">📤 生成的表达式</div>
+                <div class="cron-output">
+                    <div class="cron-expression" id="cronExpression">* * * * *</div>
+                    <div class="cron-actions">
+                        <button class="btn" id="copyBtn">📋 复制</button>
+                        <button class="btn btn-secondary" id="reverseBtn">🔄 反向解析</button>
+                    </div>
+                </div>
+                
+                <div class="description-box">
+                    <div class="description-text" id="description">
+                        每分钟执行
+                    </div>
+                </div>
+                
+                <div class="preview-section">
+                    <div class="panel-title">📅 下次执行时间</div>
+                    <div class="next-runs">
+                        <div class="next-runs-title">未来 5 次执行</div>
+                        <div class="run-list" id="nextRuns">
+                            <div class="run-item">
+                                <span class="run-time">--</span>
+                                <span class="run-desc">计算中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">可视化编辑</div>
+                <div class="feature-desc">直观的界面，无需记忆 Cron 语法</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">实时预览</div>
+                <div class="feature-desc">即时查看下次执行时间</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📋</div>
+                <div class="feature-title">常用模板</div>
+                <div class="feature-desc">一键选择常用定时任务</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">反向解析</div>
+                <div class="feature-desc">粘贴 Cron 表达式，查看含义</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>⏰ Cron 表达式生成器 - 让定时任务变得简单</p>
+        <p style="margin-top: 8px; font-size: 0.85rem;">免费工具 · 无需注册 · 支持 Linux/Unix/Quartz</p>
+    </footer>
+    
+    <div class="toast" id="toast">已复制到剪贴板！</div>
+    
+    <script>
+        // 获取元素
+        const inputs = {
+            minute: document.getElementById('minute'),
+            hour: document.getElementById('hour'),
+            day: document.getElementById('day'),
+            month: document.getElementById('month'),
+            weekday: document.getElementById('weekday')
+        };
+        
+        const values = {
+            minute: document.getElementById('minute-val'),
+            hour: document.getElementById('hour-val'),
+            day: document.getElementById('day-val'),
+            month: document.getElementById('month-val'),
+            weekday: document.getElementById('weekday-val')
+        };
+        
+        const cronExpression = document.getElementById('cronExpression');
+        const description = document.getElementById('description');
+        const nextRuns = document.getElementById('nextRuns');
+        
+        // 模板卡片点击
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                
+                const cron = card.dataset.cron;
+                const parts = cron.split(' ');
+                inputs.minute.value = parts[0];
+                inputs.hour.value = parts[1];
+                inputs.day.value = parts[2];
+                inputs.month.value = parts[3];
+                inputs.weekday.value = parts[4];
+                
+                updateCron();
+            });
+        });
+        
+        // 输入变化时更新
+        Object.keys(inputs).forEach(key => {
+            inputs[key].addEventListener('input', updateCron);
+        });
+        
+        function updateCron() {
+            const cron = `${inputs.minute.value} ${inputs.hour.value} ${inputs.day.value} ${inputs.month.value} ${inputs.weekday.value}`;
+            cronExpression.textContent = cron;
+            
+            // 更新显示值
+            Object.keys(inputs).forEach(key => {
+                values[key].textContent = inputs[key].value || '*';
+            });
+            
+            // 更新描述
+            description.innerHTML = parseCronDescription(cron);
+            
+            // 更新下次执行时间
+            updateNextRuns(cron);
+        }
+        
+        function parseCronDescription(cron) {
+            const parts = cron.split(' ');
+            if (parts.length !== 5) return '无效的 Cron 表达式';
+            
+            const [minute, hour, day, month, weekday] = parts;
+            
+            let desc = '';
+            
+            // 每分钟
+            if (minute === '*' && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+                return '每分钟执行';
+            }
+            
+            // 每小时
+            if (minute === '0' && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+                return '每小时的第 <span>0</span> 分钟执行';
+            }
+            
+            // 每天
+            if (minute === '0' && hour === '0' && day === '*' && month === '*' && weekday === '*') {
+                return '每天 <span>00:00</span> 执行';
+            }
+            
+            // 每周
+            if (minute === '0' && hour === '0' && day === '*' && month === '*' && weekday === '0') {
+                return '每周日 <span>00:00</span> 执行';
+            }
+            
+            // 每月
+            if (minute === '0' && hour === '0' && day === '1' && month === '*' && weekday === '*') {
+                return '每月 <span>1</span> 号 <span>00:00</span> 执行';
+            }
+            
+            // 构建描述
+            const timeDesc = [];
+            
+            if (minute !== '*') {
+                timeDesc.push(`第 <span>${minute}</span> 分钟`);
+            }
+            if (hour !== '*') {
+                timeDesc.push(`<span>${hour.padStart(2, '0')}:00</span>`);
+            }
+            if (day !== '*') {
+                timeDesc.push(`每月 <span>${day}</span> 号`);
+            }
+            if (month !== '*') {
+                timeDesc.push(`<span>${month}</span> 月`);
+            }
+            if (weekday !== '*') {
+                const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                const wd = weekday.split(',').map(w => weekdays[parseInt(w)] || w).join('、');
+                timeDesc.push(`<span>${wd}</span>`);
+            }
+            
+            if (timeDesc.length === 0) {
+                return '每分钟执行';
+            }
+            
+            return timeDesc.join('，') + ' 执行';
+        }
+        
+        function updateNextRuns(cron) {
+            try {
+                const runs = getNextRuns(cron, 5);
+                nextRuns.innerHTML = runs.map((run, i) => `
+                    <div class="run-item">
+                        <span class="run-time">${run}</span>
+                        <span class="run-desc">${i === 0 ? '（下次）' : ''}</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                nextRuns.innerHTML = '<div class="run-item"><span class="run-time">--</span><span class="run-desc">无法计算</span></div>';
+            }
+        }
+        
+        function getNextRuns(cron, count) {
+            const parts = cron.split(' ');
+            const [minute, hour, day, month, weekday] = parts;
+            
+            const runs = [];
+            let date = new Date();
+            
+            for (let i = 0; i < count; i++) {
+                date = getNextRun(date, minute, hour, day, month, weekday);
+                if (date) {
+                    runs.push(formatDate(date));
+                    date = new Date(date.getTime() + 60000); // 加1分钟避免重复
+                }
+            }
+            
+            return runs;
+        }
+        
+        function getNextRun(fromDate, minute, hour, day, month, weekday) {
+            const date = new Date(fromDate);
+            date.setSeconds(0, 0);
+            
+            // 简单实现：每分钟检查一次
+            for (let i = 0; i < 366 * 24 * 60; i++) {
+                date.setMinutes(date.getMinutes() + 1);
+                
+                if (matchesCron(date, minute, hour, day, month, weekday)) {
+                    return date;
+                }
+            }
+            
+            return null;
+        }
+        
+        function matchesCron(date, minute, hour, day, month, weekday) {
+            return matchesField(date.getMinutes(), minute) &&
+                   matchesField(date.getHours(), hour) &&
+                   matchesField(date.getDate(), day) &&
+                   matchesField(date.getMonth() + 1, month) &&
+                   matchesField(date.getDay(), weekday);
+        }
+        
+        function matchesField(value, pattern) {
+            if (pattern === '*') return true;
+            
+            // 处理逗号分隔
+            if (pattern.includes(',')) {
+                return pattern.split(',').some(p => matchesField(value, p.trim()));
+            }
+            
+            // 处理范围
+            if (pattern.includes('-')) {
+                const [start, end] = pattern.split('-').map(Number);
+                return value >= start && value <= end;
+            }
+            
+            // 处理步长
+            if (pattern.includes('/')) {
+                const [base, step] = pattern.split('/');
+                if (base === '*') {
+                    return value % Number(step) === 0;
+                }
+            }
+            
+            return value === Number(pattern);
+        }
+        
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekday = weekdays[date.getDay()];
+            
+            return `${year}-${month}-${day} ${hour}:${minute} ${weekday}`;
+        }
+        
+        // 复制功能
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(cronExpression.textContent);
+            showToast('已复制到剪贴板！');
+        });
+        
+        // 反向解析
+        document.getElementById('reverseBtn').addEventListener('click', () => {
+            const input = prompt('请输入 Cron 表达式（格式：* * * * *）：');
+            if (input) {
+                const parts = input.trim().split(/\s+/);
+                if (parts.length === 5) {
+                    inputs.minute.value = parts[0];
+                    inputs.hour.value = parts[1];
+                    inputs.day.value = parts[2];
+                    inputs.month.value = parts[3];
+                    inputs.weekday.value = parts[4];
+                    updateCron();
+                    showToast('已解析表达式！');
+                } else {
+                    alert('无效的 Cron 表达式，需要 5 个字段');
+                }
+            }
+        });
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // 初始化
+        updateCron();
+    </script>
+</body>
+</html>
