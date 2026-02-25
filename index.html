@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cron 表达式生成器 - 可视化定时任务工具</title>
-    <meta name="description" content="免费的 Cron 表达式生成器，支持可视化编辑、实时预览、常用模板，轻松生成 Linux/Unix/Quartz 定时任务表达式">
+    <title id="pageTitle">Cron Expression Generator - Visual Cron Tool</title>
+    <meta name="description" id="pageDesc" content="Free Cron Expression Generator with visual editor, real-time preview, and templates. Generate Linux/Unix/Quartz cron expressions easily.">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-PLACEHOLDER" crossorigin="anonymous"></script>
     <style>
         * {
             margin: 0;
@@ -46,6 +49,45 @@
             padding: 60px 20px 40px;
             background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
             border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .lang-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .lang-btn {
+            padding: 6px 12px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .lang-btn:hover, .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .ad-banner {
+            max-width: 728px;
+            margin: 20px auto;
+            min-height: 90px;
+            background: var(--surface);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
         }
         
         .logo {
@@ -448,8 +490,26 @@
 </head>
 <body>
     <header>
-        <div class="logo">⏰ Cron 表达式生成器</div>
-        <p class="tagline">可视化编辑定时任务，支持 Linux/Unix/Quartz 格式，实时预览下次执行时间，让 Cron 表达式变得简单易懂。</p>
+        <div class="lang-switcher">
+            <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+            <button class="lang-btn" onclick="setLang('en')">English</button>
+        </div>
+        
+        <div class="logo" id="logo">⏰ Cron 表达式生成器</div>
+        <p class="tagline" id="tagline">可视化编辑定时任务，支持 Linux/Unix/Quartz 格式，实时预览下次执行时间，让 Cron 表达式变得简单易懂。</p>
+        
+        <!-- AdSense Banner -->
+        <div class="ad-banner">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-PLACEHOLDER"
+                 data-ad-slot="PLACEHOLDER"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
     </header>
     
     <div class="container">
@@ -810,21 +870,72 @@
             const day = String(date.getDate()).padStart(2, '0');
             const hour = String(date.getHours()).padStart(2, '0');
             const minute = String(date.getMinutes()).padStart(2, '0');
-            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekdays = currentLang === 'zh' 
+                ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+                : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const weekday = weekdays[date.getDay()];
             
             return `${year}-${month}-${day} ${hour}:${minute} ${weekday}`;
         }
         
+        // 多语言支持
+        const i18n = {
+            zh: {
+                copied: '已复制到剪贴板！',
+                parsed: '已解析表达式！',
+                invalidCron: '无效的 Cron 表达式，需要 5 个字段',
+                next: '（下次）'
+            },
+            en: {
+                copied: 'Copied to clipboard!',
+                parsed: 'Expression parsed!',
+                invalidCron: 'Invalid cron expression, 5 fields required',
+                next: '(next)'
+            }
+        };
+        
+        let currentLang = 'zh';
+        
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', 
+                    (lang === 'zh' && btn.textContent.includes('中文')) ||
+                    (lang === 'en' && btn.textContent.includes('English'))
+                );
+            });
+            
+            // Update page title
+            document.getElementById('pageTitle').textContent = lang === 'zh' 
+                ? 'Cron 表达式生成器 - 可视化定时任务工具'
+                : 'Cron Expression Generator - Visual Cron Tool';
+            document.getElementById('pageDesc').content = lang === 'zh'
+                ? '免费的 Cron 表达式生成器，支持可视化编辑、实时预览、常用模板'
+                : 'Free Cron Expression Generator with visual editor and templates';
+            
+            // Update logo and tagline
+            document.getElementById('logo').textContent = lang === 'zh' 
+                ? '⏰ Cron 表达式生成器' 
+                : '⏰ Cron Expression Generator';
+            document.getElementById('tagline').textContent = lang === 'zh'
+                ? '可视化编辑定时任务，支持 Linux/Unix/Quartz 格式，实时预览下次执行时间'
+                : 'Visual cron editor for Linux/Unix/Quartz with real-time preview';
+            
+            updateCron();
+        }
+        
         // 复制功能
         document.getElementById('copyBtn').addEventListener('click', () => {
             navigator.clipboard.writeText(cronExpression.textContent);
-            showToast('已复制到剪贴板！');
+            showToast(i18n[currentLang].copied);
         });
         
         // 反向解析
         document.getElementById('reverseBtn').addEventListener('click', () => {
-            const input = prompt('请输入 Cron 表达式（格式：* * * * *）：');
+            const promptText = currentLang === 'zh' 
+                ? '请输入 Cron 表达式（格式：* * * * *）：'
+                : 'Enter cron expression (format: * * * * *):';
+            const input = prompt(promptText);
             if (input) {
                 const parts = input.trim().split(/\s+/);
                 if (parts.length === 5) {
@@ -834,9 +945,9 @@
                     inputs.month.value = parts[3];
                     inputs.weekday.value = parts[4];
                     updateCron();
-                    showToast('已解析表达式！');
+                    showToast(i18n[currentLang].parsed);
                 } else {
-                    alert('无效的 Cron 表达式，需要 5 个字段');
+                    alert(i18n[currentLang].invalidCron);
                 }
             }
         });
@@ -849,7 +960,13 @@
         }
         
         // 初始化
-        updateCron();
+        // 检测浏览器语言并设置
+        const browserLang = navigator.language || navigator.userLanguage;
+        if (browserLang && browserLang.startsWith('en')) {
+            setLang('en');
+        } else {
+            updateCron();
+        }
     </script>
 </body>
 </html>
